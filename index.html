@@ -131,6 +131,13 @@
     <script src="auth.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
+            // Intercept password reset redirects from Supabase
+            const hash = window.location.hash;
+            if (hash && hash.includes('type=recovery')) {
+                window.location.href = 'reset-password.html' + hash;
+                return;
+            }
+
             const navLinks = document.getElementById('navLinks');
             const authData = await checkAuth();
 

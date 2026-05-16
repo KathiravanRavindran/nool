@@ -47,6 +47,13 @@
         const loginForm = document.getElementById('loginForm');
         const submitBtn = loginForm.querySelector('.login-btn');
 
+        document.addEventListener('DOMContentLoaded', () => {
+            const hash = window.location.hash;
+            if (hash && hash.includes('type=recovery')) {
+                window.location.href = 'reset-password.html' + hash;
+            }
+        });
+
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
