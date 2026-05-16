@@ -36,6 +36,12 @@ CREATE POLICY "Admins can update profiles" ON public.users_profile
         (SELECT is_admin FROM public.users_profile WHERE id = auth.uid()) = true
     );
 
+-- Allow admins to delete profiles
+CREATE POLICY "Admins can delete profiles" ON public.users_profile
+    FOR DELETE USING (
+        (SELECT is_admin FROM public.users_profile WHERE id = auth.uid()) = true
+    );
+
 -- 3. Create the books table
 CREATE TABLE IF NOT EXISTS public.books (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,

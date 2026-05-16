@@ -193,3 +193,29 @@
     margin-left: 2rem;
     font-size: 0.9rem;
 }
+
+/* Global Mobile Responsiveness */
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        padding: 1rem;
+        gap: 1rem;
+        position: relative; /* Removes sticky overlap issues on mobile */
+    }
+    
+    .nav-links {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1rem;
+        width: 100%;
+    }
+
+    .nav-links a {
+        margin-left: 0;
+    }
+    
+    .nav-links span {
+        margin-left: 0 !important;
+    }
+}

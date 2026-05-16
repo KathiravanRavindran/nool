@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Users - Nool Admin</title>
+    <!-- Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="Auth.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --warning: #f59e0b;
+            --warning-hover: #d97706;
+            --success: #10b981;
+            --bg-gradient: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.05);
+            --radius-lg: 16px;
+            --radius-md: 12px;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 100px auto 40px auto;
+            padding: 0 2rem;
+            display: none; /* Hidden until auth is checked */
+        }
+
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            background: var(--glass-bg);
+            padding: 1.5rem 2rem;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow-soft);
+            backdrop-filter: blur(16px);
+        }
+
+        .header-actions h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #111827;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-bar {
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: var(--radius-md);
+            width: 300px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+        }
+
+        .search-bar:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .users-table-container {
+            background: var(--glass-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow-soft);
+            backdrop-filter: blur(16px);
+            overflow: hidden;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(249, 250, 251, 0.8);
+            padding: 1rem 1.5rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #4b5563;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            color: #1f2937;
+            font-size: 0.95rem;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background: rgba(249, 250, 251, 0.5);
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-active {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-pending {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .status-suspended {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-family: 'Outfit', sans-serif;
+            margin-right: 0.5rem;
+        }
+
+        .btn-reset {
+            background: var(--warning);
+            color: white;
+        }
+        .btn-reset:hover { background: var(--warning-hover); }
+
+        .btn-suspend {
+            background: #f97316; /* Orange for suspend */
+            color: white;
+        }
+        .btn-suspend:hover { background: #ea580c; }
+
+        .btn-delete {
+            background: var(--danger);
+            color: white;
+        }
+        .btn-delete:hover { background: var(--danger-hover); }
+
+        .btn-approve {
+            background: var(--success);
+            color: white;
+        }
+        .btn-approve:hover { background: #059669; }
+
+        .loading-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+            font-size: 1.1rem;
+        }
+
+        /* Mobile Responsiveness for Dashboard */
+        @media (max-width: 768px) {
+            .dashboard-container {
+                margin-top: 2rem;
+                padding: 0 1rem;
+            }
+            .header-actions {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 1rem;
+                gap: 1rem;
+            }
+            .search-bar {
+                width: 100%;
+            }
+            .action-btn {
+                padding: 0.4rem 0.6rem;
+                font-size: 0.75rem;
+                margin-bottom: 5px;
+            }
+            td, th {
+                padding: 0.75rem;
+                font-size: 0.85rem;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="index.html" class="logo">NOOL ADMIN</a>
+        <div class="nav-links">
+            <a href="admin.html" style="font-weight: 600;">Pending Registrations</a>
+            <a href="manage-users.html" style="font-weight: 600; color: var(--primary);">Manage Users</a>
+            <a href="#" onclick="logout()" style="color: #ef4444; font-weight: bold;">Logout</a>
+        </div>
+    </nav>
+
+    <div class="dashboard-container" id="dashboardContainer">
+        <div class="header-actions">
+            <h2>
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                User Management
+            </h2>
+            <input type="text" id="searchInput" class="search-bar" placeholder="Search by name or email..." onkeyup="filterUsers()">
+        </div>
+
+        <div class="users-table-container">
+            <table id="usersTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Department</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="usersBody">
+                    <tr><td colspan="5" class="loading-state">Loading users...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script>
+        const dashboardContainer = document.getElementById('dashboardContainer');
+        let allUsers = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const authData = await requireAdmin();
+            if (authData) {
+                dashboardContainer.style.display = 'block';
+                fetchUsers();
+            }
+        });
+
+        async function fetchUsers() {
+            const tbody = document.getElementById('usersBody');
+            
+            try {
+                const client = window.supabase || supabase;
+                const { data, error } = await client
+                    .from('users_profile')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                allUsers = data || [];
+                renderUsers(allUsers);
+            } catch (err) {
+                console.error("Fetch Error:", err);
+                tbody.innerHTML = '<tr><td colspan="5" class="loading-state" style="color: red;">Failed to load users.</td></tr>';
+            }
+        }
+
+        function renderUsers(users) {
+            const tbody = document.getElementById('usersBody');
+            tbody.innerHTML = '';
+
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="loading-state">No users found.</td></tr>';
+                return;
+            }
+
+            users.forEach(user => {
+                // Don't show admin users in this basic management view to prevent accidental lockout
+                if (user.is_admin) return;
+
+                let statusBadge = '';
+                if (user.is_approved) {
+                    statusBadge = '<span class="status-badge status-active">Approved</span>';
+                } else {
+                    statusBadge = '<span class="status-badge status-pending">Pending</span>';
+                }
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-weight: 500;">${user.full_name}</td>
+                        <td>${user.email}</td>
+                        <td>${user.department} - ${user.year} Yr</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <button class="action-btn btn-reset" onclick="sendPasswordReset('${user.email}')" title="Send Password Reset Email">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                                Reset
+                            </button>
+                            ${user.is_approved ? 
+                                `<button class="action-btn btn-suspend" onclick="toggleApproval('${user.id}', false)">Suspend</button>` : 
+                                `<button class="action-btn btn-approve" onclick="toggleApproval('${user.id}', true)">Approve</button>`
+                            }
+                            <button class="action-btn btn-delete" onclick="deleteProfile('${user.id}', '${user.full_name}')" title="Delete User Profile">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function sendPasswordReset(email) {
+            if (!confirm(`Are you sure you want to send a password reset email to ${email}?`)) return;
+
+            try {
+                const client = window.supabase || supabase;
+                const { error } = await client.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin + '/reset-password.html', // Redirect to the dedicated reset password page
+                });
+
+                if (error) throw error;
+                alert(`Password reset link sent to ${email} successfully!`);
+            } catch (err) {
+                console.error("Reset Error:", err);
+                alert("Failed to send reset email: " + err.message);
+            }
+        }
+
+        async function toggleApproval(userId, isApproved) {
+            const actionText = isApproved ? "approve" : "suspend";
+            if (!confirm(`Are you sure you want to ${actionText} this user?`)) return;
+
+            try {
+                const client = window.supabase || supabase;
+                const { error } = await client
+                    .from('users_profile')
+                    .update({ is_approved: isApproved })
+                    .eq('id', userId);
+
+                if (error) throw error;
+                
+                alert(`User ${actionText}d successfully!`);
+                fetchUsers(); // Refresh list
+            } catch (err) {
+                console.error("Update Error:", err);
+                alert(`Failed to ${actionText} user.`);
+            }
+        }
+
+        async function deleteProfile(userId, userName) {
+            if (!confirm(`CRITICAL WARNING: Are you sure you want to permanently delete ${userName}'s profile?\n\nThis will remove all their profile data and automatically delete any books they have listed. They will no longer be able to log in to the application.`)) return;
+
+            try {
+                const client = window.supabase || supabase;
+                const { error } = await client
+                    .from('users_profile')
+                    .delete()
+                    .eq('id', userId);
+
+                if (error) throw error;
+                
+                alert(`${userName}'s profile has been deleted successfully.`);
+                fetchUsers(); // Refresh list
+            } catch (err) {
+                console.error("Delete Error:", err);
+                alert(`Failed to delete profile: ${err.message}`);
+            }
+        }
+
+        function filterUsers() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allUsers.filter(user => 
+                user.full_name.toLowerCase().includes(query) || 
+                user.email.toLowerCase().includes(query)
+            );
+            renderUsers(filtered);
+        }
+    </script>
+</body>
+</html>
