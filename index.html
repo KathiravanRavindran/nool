@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nool - Campus Book Marketplace</title>
+    <link rel="stylesheet" href="Auth.css">
+    <style>
+        /* Specific Styles for the Home Page */
+        .hero-section {
+            text-align: center;
+            max-width: 900px;
+            width: 100%;
+            padding: 20px;
+        }
+
+        .hero-header {
+            margin-bottom: 3rem;
+        }
+
+        .hero-header h1 {
+            font-size: 3rem;
+            color: var(--text-main);
+            margin-bottom: 10px;
+            letter-spacing: -1px;
+        }
+
+        .hero-header span {
+            color: var(--primary-color);
+        }
+
+        .main-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .action-card {
+            background: var(--card-bg);
+            padding: 3rem 2rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            text-decoration: none;
+            transition: transform 0.2s, border-color 0.2s;
+            border: 2px solid transparent;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .action-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color);
+        }
+
+        .icon-box {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .action-card h3 {
+            color: var(--text-main);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .action-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            .main-actions {
+                grid-template-columns: 1fr;
+            }
+            .hero-header h1 {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="index.html" class="logo">NOOL</a>
+        <div class="nav-links" id="navLinks">
+            <a href="login.html">Login</a>
+            <a href="login.html?admin=true" style="color: #6b7280;">Admin Login</a>
+            <a href="register.html" style="color: var(--primary-color); font-weight: 700;">Join Now</a>
+        </div>
+    </nav>
+
+    <div class="auth-container">
+        <div class="hero-section">
+            <div class="hero-header">
+                <h1>Find your next <span>Academic Companion</span></h1>
+                <p style="color: var(--text-muted); font-size: 1.1rem;">
+                    The exclusive peer-to-peer book marketplace for our college community.
+                </p>
+            </div>
+
+            <div class="main-actions">
+                <!-- Buy Book Card -->
+                <a href="buy.html" class="action-card">
+                    <div class="icon-box">📚</div>
+                    <h3>Buy a Book</h3>
+                    <p>Search by department or edition. Get textbooks at affordable peer prices.</p>
+                </a>
+
+                <!-- Sell Book Card -->
+                <a href="sell.html" class="action-card">
+                    <div class="icon-box">💰</div>
+                    <h3>Sell a Book</h3>
+                    <p>Declutter your shelf and help a junior. List your used books in seconds.</p>
+                </a>
+            </div>
+            
+            <p style="margin-top: 3rem; font-size: 0.85rem; color: var(--text-muted);">
+                A project by <strong>Coders Cult</strong>
+            </p>
+        </div>
+    </div>
+
+    <!-- Supabase and Auth Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const navLinks = document.getElementById('navLinks');
+            const authData = await checkAuth();
+
+            if (authData) {
+                // User is logged in
+                let adminLink = '';
+                if (authData.profile && authData.profile.is_admin) {
+                    adminLink = '<a href="admin.html" style="color: var(--primary-color); font-weight: 700;">Admin Dashboard</a>';
+                }
+                
+                navLinks.innerHTML = `
+                    ${adminLink}
+                    <span style="margin-left: 2rem; font-size: 0.9rem; font-weight: 500;">Hi, ${authData.profile.full_name.split(' ')[0]}</span>
+                    <a href="#" onclick="logout()">Logout</a>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

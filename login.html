@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Nool Community</title>
+    <link rel="stylesheet" href="Auth.css">
+</head>
+<body>
+
+    <div class="auth-container">
+        <div class="login-card">
+            <a href="index.html" style="text-decoration: none; color: var(--text-muted); display: inline-block; margin-bottom: 1rem; font-size: 0.9rem;">&larr; Back to Home</a>
+            <div class="login-header">
+                <h2>Welcome Back</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+                    Please enter your details to login
+                </p>
+            </div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="name@gmail.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="••••••••" required>
+
+                </div>
+
+                <button type="submit" class="login-btn">Sign In</button>
+            </form>
+
+            <div class="register-link">
+                Don't have an account? <a href="register.html">Create one</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const submitBtn = loginForm.querySelector('.login-btn');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Signing In...";
+
+            try {
+                const client = window.supabase || supabase;
+                
+                // 1. Authenticate with Supabase
+                const { data: authData, error: authError } = await client.auth.signInWithPassword({
+                    email: data.email,
+                    password: data.password
+                });
+
+                if (authError) throw authError;
+
+                // 2. Check approval status
+                const { data: profile, error: profileError } = await client
+                    .from('users_profile')
+                    .select('is_approved, is_admin')
+                    .eq('id', authData.user.id)
+                    .single();
+
+                if (profileError) throw profileError;
+
+                if (!profile.is_approved) {
+                    await client.auth.signOut();
+                    alert("Your account is pending admin approval. Please try again later.");
+                } else {
+                    if (profile.is_admin) {
+                        alert("Admin Login successful!");
+                        window.location.href = 'admin.html';
+                    } else {
+                        alert("Login successful!");
+                        window.location.href = 'index.html';
+                    }
+                }
+            } catch (error) {
+                console.error("Login Error:", error);
+                alert("Login failed: " + (error.message || "Invalid credentials"));
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Sign In";
+            }
+        });
+    </script>
+</body>
+</html>
