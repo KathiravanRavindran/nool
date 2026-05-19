@@ -1,4 +1,4 @@
--- Nool Campus Marketplace Schema setup
+-- Book Campus Marketplace Schema setup
 -- Run this entire script in your Supabase SQL Editor
 
 -- RESET DATABASE (Drops existing tables so we can start clean)
@@ -69,9 +69,19 @@ CREATE POLICY "Books are viewable by everyone" ON public.books
 CREATE POLICY "Users can insert their own books" ON public.books
     FOR INSERT WITH CHECK (auth.uid() = seller_id);
 
--- Allow users to delete their own books (optional, but good practice)
-CREATE POLICY "Users can delete their own books" ON public.books
-    FOR DELETE USING (auth.uid() = seller_id);
+-- Allow users and admins to delete books
+CREATE POLICY "Users and admins can delete books" ON public.books
+    FOR DELETE USING (
+        auth.uid() = seller_id OR 
+        (SELECT is_admin FROM public.users_profile WHERE id = auth.uid()) = true
+    );
+
+-- Allow users and admins to update books
+CREATE POLICY "Users and admins can update books" ON public.books
+    FOR UPDATE USING (
+        auth.uid() = seller_id OR 
+        (SELECT is_admin FROM public.users_profile WHERE id = auth.uid()) = true
+    );
 
 -- ==========================================
 -- HELPER COMMAND: PROMOTING A USER TO ADMIN

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sell Book - Nool</title>
+    <title>Sell Book - Book</title>
     <link rel="stylesheet" href="Auth.css">
     <style>
         .sell-card {
@@ -28,6 +28,12 @@
     </style>
 </head>
 <body>
+    <nav class="navbar">
+        <a href="index.html" class="logo">BOOK</a>
+        <div class="nav-links">
+            <a href="buy.html" style="font-weight: 600;">Marketplace</a>
+        </div>
+    </nav>
     <div class="auth-container">
         <div class="login-card sell-card">
             <div class="login-header">
@@ -47,7 +53,7 @@
                         <label>Regulation Year</label>
                         <select name="regulation" class="custom-select" required>
                             <option value="2021">2021 Regulation</option>
-                            <option value="2017">2017 Regulation</option>
+                            <option value="2024">2024 Regulation</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
@@ -100,9 +106,6 @@
                 <button type="submit" id="submitBtn" class="login-btn">Post Advertisement</button>
             </form>
 
-            <div class="register-link">
-                <a href="index.html">← Back to Home</a>
-            </div>
         </div>
     </div>
 
@@ -120,10 +123,34 @@
         const submitBtn = document.getElementById('submitBtn');
         let currentUser = null;
 
+        const urlParams = new URLSearchParams(window.location.search);
+        const editId = urlParams.get('edit');
+
         // Check Auth
         document.addEventListener('DOMContentLoaded', async () => {
             const authData = await requireAuth();
             if (authData) currentUser = authData.session.user;
+
+            if (editId) {
+                document.querySelector('.login-header h2').innerText = 'Edit Book Listing';
+                submitBtn.innerText = 'Update Listing';
+                const client = window.supabase || supabase;
+                const { data: bookData, error } = await client.from('books').select('*').eq('id', editId).single();
+                
+                if (bookData) {
+                    sellForm.bookName.value = bookData.book_name;
+                    sellForm.regulation.value = bookData.regulation;
+                    sellForm.subject.value = bookData.subject;
+                    sellForm.publication.value = bookData.publication;
+                    sellForm.originalPrice.value = bookData.original_price;
+                    sellForm.sellingPrice.value = bookData.selling_price;
+                    sellForm.condition.value = bookData.condition;
+                    sellForm.contact.value = bookData.contact;
+                    preview.src = bookData.image_url;
+                    preview.style.display = 'block';
+                    imageInput.required = false; // Not required when editing
+                }
+            }
         });
 
         // Image Preview Logic
@@ -143,69 +170,98 @@
         sellForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const file = imageInput.files[0];
-            if (!file) return alert("Please upload a photo of the book.");
-
             submitBtn.disabled = true;
-            submitBtn.innerText = "Processing Listing...";
-            status.innerText = "Uploading image to Nool servers...";
+            submitBtn.innerText = editId ? "Updating Listing..." : "Processing Listing...";
+            
+            let imageUrl = preview.src; // Default to existing if no new file is chosen
+            const file = imageInput.files[0];
+            
+            if (!file && !editId) {
+                alert("Please upload a photo of the book.");
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Post Advertisement";
+                return;
+            }
 
-            const imgFormData = new FormData();
-            imgFormData.append('image', file);
-            // Renaming image to include book name for better organization
-            const bookName = sellForm.bookName.value.replace(/\s+/g, '-').toLowerCase();
-            imgFormData.append('name', `nool-book-${bookName}`);
+            if (file) {
+                status.innerText = "Uploading image to Book servers...";
+                const imgFormData = new FormData();
+                imgFormData.append('image', file);
+                const bookName = sellForm.bookName.value.replace(/\s+/g, '-').toLowerCase();
+                imgFormData.append('name', `book-book-${bookName}`);
+
+                try {
+                    const response = await fetch(`https://api.imgbb.com/1/upload?key=${API_KEY}`, {
+                        method: 'POST',
+                        body: imgFormData
+                    });
+
+                    const imgResult = await response.json();
+                    if (imgResult.success) {
+                        imageUrl = imgResult.data.url;
+                    } else {
+                        throw new Error("Image upload failed");
+                    }
+                } catch (error) {
+                    console.error("Error:", error);
+                    alert("Something went wrong with the image upload: " + (error.message || "Please try again."));
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = editId ? "Update Listing" : "Post Advertisement";
+                    return;
+                }
+            }
 
             try {
-                const response = await fetch(`https://api.imgbb.com/1/upload?key=${API_KEY}`, {
-                    method: 'POST',
-                    body: imgFormData
-                });
+                // Final Data Object
+                const formData = new FormData(sellForm);
+                const updatePayload = {
+                    book_name: formData.get('bookName'),
+                    regulation: formData.get('regulation'),
+                    subject: formData.get('subject'),
+                    publication: formData.get('publication'),
+                    original_price: parseFloat(formData.get('originalPrice')),
+                    selling_price: parseFloat(formData.get('sellingPrice')),
+                    condition: formData.get('condition'),
+                    image_url: imageUrl,
+                    contact: formData.get('contact')
+                };
 
-                const imgResult = await response.json();
-
-                if (imgResult.success) {
-                    const imageUrl = imgResult.data.url;
+                status.innerText = "Saving book details...";
+                const client = window.supabase || supabase;
+                
+                if (editId) {
+                    const { data: updatedData, error: dbError } = await client
+                        .from('books')
+                        .update(updatePayload)
+                        .eq('id', editId)
+                        .select();
+                    if (dbError) throw dbError;
                     
-                    // Final Data Object
-                    const formData = new FormData(sellForm);
-                    const finalListing = Object.fromEntries(formData.entries());
-                    finalListing.imageUrl = imageUrl;
-
-                    // Insert to Supabase books table
-                    status.innerText = "Saving book details...";
-                    const client = window.supabase || supabase;
+                    if (!updatedData || updatedData.length === 0) {
+                        alert("Update blocked by Database Security (RLS). Please ensure you ran the SQL commands in Supabase SQL Editor!");
+                        submitBtn.disabled = false;
+                        submitBtn.innerText = "Update Listing";
+                        return;
+                    }
+                    
+                    alert("Book updated successfully!");
+                    window.location.href = 'buy.html';
+                } else {
+                    updatePayload.seller_id = currentUser.id;
                     const { error: dbError } = await client
                         .from('books')
-                        .insert([
-                            {
-                                seller_id: currentUser.id,
-                                book_name: finalListing.bookName,
-                                regulation: finalListing.regulation,
-                                subject: finalListing.subject,
-                                publication: finalListing.publication,
-                                original_price: parseFloat(finalListing.originalPrice),
-                                selling_price: parseFloat(finalListing.sellingPrice),
-                                condition: finalListing.condition,
-                                image_url: finalListing.imageUrl,
-                                contact: finalListing.contact
-                            }
-                        ]);
-                    
+                        .insert([updatePayload]);
                     if (dbError) throw dbError;
 
-                    console.log("Success! Listing saved to Database:", finalListing);
                     alert("Book listed successfully!");
                     window.location.href = 'index.html'; 
-                } else {
-                    throw new Error("Image upload failed");
                 }
             } catch (error) {
                 console.error("Error:", error);
                 alert("Something went wrong: " + (error.message || "Please try again."));
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.innerText = "Post Advertisement";
+                submitBtn.innerText = editId ? "Update Listing" : "Post Advertisement";
             }
         });
     </script>
